@@ -1,0 +1,31 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-push-deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to DockerHub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Build Docker Image
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/devops-frontend:v1 .
+        docker tag ${{ secrets.DOCKER_USERNAME }}/devops-frontend:v1 ${{ secrets.DOCKER_USERNAME }}/devops-frontend:latest
+
+    - name: Push Docker Image
+      run: |
+        docker push ${{ secrets.DOCKER_USERNAME }}/devops-frontend:v1
+        docker push ${{ secrets.DOCKER_USERNAME }}/devops-frontend:latest
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f k8s/
